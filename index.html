@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terminal Override || System Defense</title>
+    <style>
+        body {
+            background-color: #050505;
+            color: #00ff00;
+            font-family: 'Courier New', Courier, monospace;
+            margin: 0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* CRT Scanline effect */
+        body::after {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 2;
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+        }
+
+        #ui-header {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px 30px;
+            font-size: 1.5rem;
+            text-shadow: 0 0 10px #00ff00;
+            border-bottom: 1px solid #005500;
+        }
+
+        #game-board {
+            flex-grow: 1;
+            position: relative;
+            background: radial-gradient(circle, #0a110a 0%, #000000 100%);
+        }
+
+        .falling-word {
+            position: absolute;
+            font-size: 1.2rem;
+            text-shadow: 0 0 8px #00ff00;
+            white-space: nowrap;
+            letter-spacing: 2px;
+        }
+
+        #input-area {
+            background-color: #000;
+            border-top: 2px solid #00ff00;
+            padding: 20px 30px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0px -5px 15px rgba(0, 255, 0, 0.2);
+        }
+
+        .prompt {
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-shadow: 0 0 5px #00ff00;
+        }
+
+        input {
+            background: transparent;
+            border: none;
+            color: #00ff00;
+            font-family: inherit;
+            font-size: 1.5rem;
+            outline: none;
+            width: 100%;
+            text-shadow: 0 0 5px #00ff00;
+        }
+
+        #game-over-screen {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            display: none;
+            z-index: 10;
+        }
+
+        .glitch-text {
+            font-size: 4rem;
+            color: red;
+            text-shadow: 0 0 20px red;
+            margin-bottom: 20px;
+        }
+
+        button {
+            background-color: transparent;
+            color: #00ff00;
+            border: 2px solid #00ff00;
+            padding: 10px 20px;
+            font-family: inherit;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background-color: #00ff00;
+            color: #000;
+            box-shadow: 0 0 15px #00ff00;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="ui-header">
+        <div>STATUS: <span id="status" style="color: #00ff00;">SECURE</span></div>
+        <div>THREATS NEUTRALIZED: <span id="score">0</span></div>
+    </div>
+
+    <div id="game-board">
+        <div id="game-over-screen">
+            <div class="glitch-text">MAINFRAME BREACHED</div>
+            <button onclick="location.reload()">INITIATE REBOOT SEQUENCE</button>
+        </div>
+    </div>
+
+    <div id="input-area">
+        <span class="prompt">guest@sqi-terminal:~$</span>
+        <input type="text" id="type-input" autocomplete="off" spellcheck="false" autofocus>
+    </div>
+
+    <script>
+        // The vocabulary. You can change these to anything!
+        const vocabulary = [
+            'bypass-firewall', 'encrypt-payload', 'frontend-render', 
+            'fetch-api', 'virtulease-db', 'override-telemetry', 
+            'inject-script', 'sudo-rm-rf', 'compile-assets', 
+            'route-traffic', 'deploy-server', 'null-pointer'
+        ];
+
+        const gameBoard = document.getElementById('game-board');
+        const inputField = document.getElementById('type-input');
+        const scoreDisplay = document.getElementById('score');
+        const statusDisplay = document.getElementById('status');
+        const gameOverScreen = document.getElementById('game-over-screen');
+
+        let activeWords = [];
+        let score = 0;
+        let gameInterval;
+        let spawnInterval;
+        let isGameOver = false;
+
+        // Configuration
+        let fallSpeed = 2; // How fast words move down the screen
+        let spawnRate = 2000; // Milliseconds between new words
+
+        function spawnWord() {
+            if (isGameOver) return;
+
+            const wordText = vocabulary[Math.floor(Math.random() * vocabulary.length)];
+            const wordEl = document.createElement('div');
+            wordEl.classList.add('falling-word');
+            wordEl.textContent = wordText;
+
+            // Randomize starting X position
+            // Subtract 200px to ensure long words don't spawn off the right edge
+            const maxLeft = gameBoard.clientWidth - 200; 
+            const randomLeft = Math.floor(Math.random() * maxLeft);
+            
+            wordEl.style.left = `${randomLeft}px`;
+            wordEl.style.top = '-30px';
+
+            gameBoard.appendChild(wordEl);
+            
+            activeWords.push({
+                element: wordEl,
+                text: wordText,
+                top: -30
+            });
+        }
+
+        function updateGame() {
+            if (isGameOver) return;
+
+            const boardHeight = gameBoard.clientHeight;
+
+            // Loop backwards because we might be removing items from the array
+            for (let i = activeWords.length - 1; i >= 0; i--) {
+                let wordObj = activeWords[i];
+                wordObj.top += fallSpeed;
+                wordObj.element.style.top = `${wordObj.top}px`;
+
+                // Check for collision with the bottom
+                if (wordObj.top >= boardHeight - 30) {
+                    endGame();
+                }
+            }
+        }
+
+        function endGame() {
+            isGameOver = true;
+            clearInterval(gameInterval);
+            clearInterval(spawnInterval);
+            inputField.disabled = true;
+            statusDisplay.textContent = "COMPROMISED";
+            statusDisplay.style.color = "red";
+            gameOverScreen.style.display = "block";
+            
+            // Stop existing words
+            activeWords.forEach(w => w.element.style.color = "red");
+        }
+
+        // Listen for typing
+        inputField.addEventListener('input', (e) => {
+            if (isGameOver) return;
+
+            const typedText = e.target.value.trim();
+
+            // Check if what the user typed matches any active word
+            const matchIndex = activeWords.findIndex(w => w.text === typedText);
+
+            if (matchIndex > -1) {
+                // Remove the matched word from the DOM
+                gameBoard.removeChild(activeWords[matchIndex].element);
+                
+                // Remove from our tracking array
+                activeWords.splice(matchIndex, 1);
+                
+                // Update score and clear input
+                score++;
+                scoreDisplay.textContent = score;
+                inputField.value = '';
+
+                // Increase difficulty slightly every 5 points
+                if (score % 5 === 0) {
+                    fallSpeed += 0.5;
+                }
+            }
+        });
+
+        // Ensure the input always stays focused so the user doesn't have to click it
+        document.addEventListener('click', () => {
+            if(!isGameOver) inputField.focus();
+        });
+
+        // Start the engine
+        function init() {
+            spawnWord(); // Spawn the first word immediately
+            gameInterval = setInterval(updateGame, 50); // 20fps update loop
+            spawnInterval = setInterval(spawnWord, spawnRate);
+        }
+
+        init();
+
+    </script>
+</body>
+</html>
