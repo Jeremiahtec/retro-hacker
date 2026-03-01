@@ -16,7 +16,6 @@
             height: 100vh;
         }
 
-        /* CRT Scanline effect */
         body::after {
             content: " ";
             display: block;
@@ -136,7 +135,6 @@
     </div>
 
     <script>
-        // The vocabulary. You can change these to anything!
         const vocabulary = [
             'bypass-firewall', 'encrypt-payload', 'frontend-render', 
             'fetch-api', 'virtulease-db', 'override-telemetry', 
@@ -156,9 +154,8 @@
         let spawnInterval;
         let isGameOver = false;
 
-        // Configuration
-        let fallSpeed = 2; // How fast words move down the screen
-        let spawnRate = 2000; // Milliseconds between new words
+        let fallSpeed = 2;
+        let spawnRate = 2000;
 
         function spawnWord() {
             if (isGameOver) return;
@@ -168,8 +165,6 @@
             wordEl.classList.add('falling-word');
             wordEl.textContent = wordText;
 
-            // Randomize starting X position
-            // Subtract 200px to ensure long words don't spawn off the right edge
             const maxLeft = gameBoard.clientWidth - 200; 
             const randomLeft = Math.floor(Math.random() * maxLeft);
             
@@ -190,13 +185,11 @@
 
             const boardHeight = gameBoard.clientHeight;
 
-            // Loop backwards because we might be removing items from the array
             for (let i = activeWords.length - 1; i >= 0; i--) {
                 let wordObj = activeWords[i];
                 wordObj.top += fallSpeed;
                 wordObj.element.style.top = `${wordObj.top}px`;
 
-                // Check for collision with the bottom
                 if (wordObj.top >= boardHeight - 30) {
                     endGame();
                 }
@@ -212,52 +205,40 @@
             statusDisplay.style.color = "red";
             gameOverScreen.style.display = "block";
             
-            // Stop existing words
             activeWords.forEach(w => w.element.style.color = "red");
         }
 
-        // Listen for typing
         inputField.addEventListener('input', (e) => {
             if (isGameOver) return;
 
             const typedText = e.target.value.trim();
-
-            // Check if what the user typed matches any active word
             const matchIndex = activeWords.findIndex(w => w.text === typedText);
 
             if (matchIndex > -1) {
-                // Remove the matched word from the DOM
                 gameBoard.removeChild(activeWords[matchIndex].element);
-                
-                // Remove from our tracking array
                 activeWords.splice(matchIndex, 1);
                 
-                // Update score and clear input
                 score++;
                 scoreDisplay.textContent = score;
                 inputField.value = '';
 
-                // Increase difficulty slightly every 5 points
                 if (score % 5 === 0) {
                     fallSpeed += 0.5;
                 }
             }
         });
 
-        // Ensure the input always stays focused so the user doesn't have to click it
         document.addEventListener('click', () => {
             if(!isGameOver) inputField.focus();
         });
 
-        // Start the engine
         function init() {
-            spawnWord(); // Spawn the first word immediately
-            gameInterval = setInterval(updateGame, 50); // 20fps update loop
+            spawnWord();
+            gameInterval = setInterval(updateGame, 50);
             spawnInterval = setInterval(spawnWord, spawnRate);
         }
 
         init();
-
     </script>
 </body>
 </html>
